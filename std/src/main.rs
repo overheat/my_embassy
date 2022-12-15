@@ -4,12 +4,13 @@ use clap::Parser;
 use embassy_executor::{Executor, Spawner};
 use embassy_net::udp::UdpSocket;
 use embassy_net::{ConfigStrategy, Ipv4Address, Ipv4Cidr, PacketMetadata, Stack, StackResources};
+use embassy_time::{Duration, Timer};
 use heapless::Vec;
 use log::*;
 use rand_core::{OsRng, RngCore};
 use static_cell::StaticCell;
 
-#[path = "../tuntap.rs"]
+#[path = "./tuntap.rs"]
 mod tuntap;
 
 use crate::tuntap::TunTapDevice;
@@ -93,6 +94,14 @@ async fn main_task(spawner: Spawner) {
     }
 }
 
+#[embassy_executor::task]
+async fn tick() {
+    loop {
+        info!("tick");
+        Timer::after(Duration::from_secs(1)).await;
+    }
+}
+
 static EXECUTOR: StaticCell<Executor> = StaticCell::new();
 
 fn main() {
@@ -105,5 +114,6 @@ fn main() {
     let executor = EXECUTOR.init(Executor::new());
     executor.run(|spawner| {
         spawner.spawn(main_task(spawner)).unwrap();
+        spawner.spawn(tick()).unwrap();
     });
 }
