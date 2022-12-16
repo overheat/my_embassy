@@ -8,15 +8,43 @@ use core::convert::Infallible;
 
 use defmt::*;
 use embassy_executor::Spawner;
-use embassy_net::tcp::TcpSocket;
 use embassy_net::{Stack, StackResources};
+use embassy_net::{tcp::client::{TcpClient, TcpClientState}};
 use embassy_rp::gpio::{Flex, Level, Output};
 use embassy_rp::peripherals::{PIN_23, PIN_24, PIN_25, PIN_29};
 use embedded_hal_1::spi::ErrorType;
 use embedded_hal_async::spi::{ExclusiveDevice, SpiBusFlush, SpiBusRead, SpiBusWrite};
+use    embassy_time::{Duration, Timer};
 use embedded_io::asynch::Write;
 use static_cell::StaticCell;
+use heapless::String;
+use     reqwless::{
+        client::{HttpClient, TlsConfig},
+        request::{ContentType, Method},
+    };
 use {defmt_rtt as _, panic_probe as _};
+
+/// HTTP endpoint hostname
+const HOSTNAME: &str = "";
+
+/// HTTP endpoint port
+const PORT: &str = "";
+
+/// HTTP username
+const USERNAME: &str = "";
+
+/// HTTP password
+const PASSWORD: &str = "";
+
+#[path = "../common/dns.rs"]
+mod dns;
+use dns::*;
+
+
+#[path = "../common/temperature.rs"]
+mod temperature;
+use temperature::*;
+
 
 macro_rules! singleton {
     ($val:expr) => {{
@@ -76,66 +104,93 @@ async fn main(spawner: Spawner) {
     control.join_wpa2(env!("WIFI_NETWORK"), env!("WIFI_PASSWORD")).await;
 
     let config = embassy_net::ConfigStrategy::Dhcp;
-    //let config = embassy_net::ConfigStrategy::Static(embassy_net::Config {
-    //    address: Ipv4Cidr::new(Ipv4Address::new(192, 168, 69, 2), 24),
-    //    dns_servers: Vec::new(),
-    //    gateway: Some(Ipv4Address::new(192, 168, 69, 1)),
-    //});
 
     // Generate random seed
     let seed = 0x0123_4567_89ab_cdef; // chosen by fair dice roll. guarenteed to be random.
 
-    // Init network stack
-    let stack = &*singleton!(Stack::new(
-        net_device,
-        config,
-        singleton!(StackResources::<1, 2, 8>::new()),
-        seed
-    ));
+    // // Init network stack
+    // let stack = &*singleton!(Stack::new(
+    //     net_device,
+    //     config,
+    //     singleton!(StackResources::<1, 2, 8>::new()),
+    //     seed
+    // ));
+
+    static RESOURCES: StaticCell<StackResources<1, 2, 8>> = StaticCell::new();
+    let resources = RESOURCES.init(StackResources::new());
+
+    static STACK: StaticCell<Stack<cyw43::NetDevice<'static>>> = StaticCell::new();
+    let stack = STACK.init(Stack::new(net_device, config, resources, seed));
+
 
     unwrap!(spawner.spawn(net_task(stack)));
 
-    // And now we can use it!
+    // // And now we can use it!
 
-    let mut rx_buffer = [0; 4096];
-    let mut tx_buffer = [0; 4096];
-    let mut buf = [0; 4096];
+    // let mut rx_buffer = [0; 4096];
+    // let mut tx_buffer = [0; 4096];
+    // let mut buf = [0; 4096];
+
+    static CLIENT_STATE: TcpClientState<1, 1024, 1024> = TcpClientState::new();
+    let client = TcpClient::new(&stack, &CLIENT_STATE);
+
+    // Launch updater task
+    // spawner
+    //     .spawn(updater_task(stack, Flash::new(p.FLASH), seed))
+    //     .unwrap();
+
+    let mut url: String<128> = String::new();
+    // write!(url, "https://{}:{}/v1/foo", HOSTNAME, PORT).unwrap();
+
+    let mut tls = [0; 16384];
+    let mut client = HttpClient::new_with_tls(&client, &DNS, TlsConfig::new(seed as u64, &mut tls));
+
+    info!("Application initialized.");
 
     loop {
-        let mut socket = TcpSocket::new(stack, &mut rx_buffer, &mut tx_buffer);
-        socket.set_timeout(Some(embassy_net::SmolDuration::from_secs(10)));
+        Timer::after(Duration::from_secs(3)).await;
+        let sensor_data = TemperatureData {
+            geoloc: None,
+            temp: Some(22.2),
+            hum: None,
+        };
 
-        info!("Listening on TCP:1234...");
-        if let Err(e) = socket.accept(1234).await {
-            warn!("accept error: {:?}", e);
-            continue;
-        }
+        info!("Reporting sensor data: {:?}", sensor_data.temp);
 
-        info!("Received connection from {:?}", socket.remote_endpoint());
+        // let mut socket = TcpSocket::new(stack, &mut rx_buffer, &mut tx_buffer);
+        // socket.set_timeout(Some(embassy_net::SmolDuration::from_secs(10)));
 
-        loop {
-            let n = match socket.read(&mut buf).await {
-                Ok(0) => {
-                    warn!("read EOF");
-                    break;
-                }
-                Ok(n) => n,
-                Err(e) => {
-                    warn!("read error: {:?}", e);
-                    break;
-                }
-            };
+        // info!("Listening on TCP:1234...");
+        // if let Err(e) = socket.accept(1234).await {
+        //     warn!("accept error: {:?}", e);
+        //     continue;
+        // }
 
-            info!("rxd {:02x}", &buf[..n]);
+        // info!("Received connection from {:?}", socket.remote_endpoint());
 
-            match socket.write_all(&buf[..n]).await {
-                Ok(()) => {}
-                Err(e) => {
-                    warn!("write error: {:?}", e);
-                    break;
-                }
-            };
-        }
+        // loop {
+        //     let n = match socket.read(&mut buf).await {
+        //         Ok(0) => {
+        //             warn!("read EOF");
+        //             break;
+        //         }
+        //         Ok(n) => n,
+        //         Err(e) => {
+        //             warn!("read error: {:?}", e);
+        //             break;
+        //         }
+        //     };
+
+        //     info!("rxd {:02x}", &buf[..n]);
+
+        //     match socket.write_all(&buf[..n]).await {
+        //         Ok(()) => {}
+        //         Err(e) => {
+        //             warn!("write error: {:?}", e);
+        //             break;
+        //         }
+        //     };
+        // }
     }
 }
 
