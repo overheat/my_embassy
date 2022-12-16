@@ -33,7 +33,7 @@ const PORT: &str = "443";
 const USERNAME: &str = "device1@embassy-app";
 
 /// HTTP password
-const PASSWORD: &str = "";
+const PASSWORD: &str = "hey-rodney";
 
 #[path = "../common/dns.rs"]
 mod dns;
@@ -102,9 +102,9 @@ async fn main(spawner: Spawner) {
 
     // let config = embassy_net::ConfigStrategy::Dhcp;
     let config = embassy_net::ConfigStrategy::Static(embassy_net::Config {
-        address: Ipv4Cidr::new(Ipv4Address::new(192, 168, 31, 111), 24),
+        address: Ipv4Cidr::new(Ipv4Address::new(192, 168, 88, 111), 24),
         dns_servers: Vec::new(),
-        gateway: Some(Ipv4Address::new(192, 168, 31, 1)),
+        gateway: Some(Ipv4Address::new(192, 168, 88, 1)),
     });
 
     // Generate random seed
@@ -120,7 +120,7 @@ async fn main(spawner: Spawner) {
 
     unwrap!(spawner.spawn(net_task(stack)));
 
-    // // And now we can use it!
+    // And now we can use it!
 
     // let mut rx_buffer = [0; 4096];
     // let mut tx_buffer = [0; 4096];
@@ -134,7 +134,7 @@ async fn main(spawner: Spawner) {
     //     .spawn(updater_task(stack, Flash::new(p.FLASH), seed))
     //     .unwrap();
 
-    let mut url: String<128> = String::from("https://http.sandbox.drogue.cloud/v1/foo");
+    let mut url: String<128> = String::from("https://http.sandbox.drogue.cloud/v1/pico");
     // write!(url, "https://{}:{}/v1/pico", HOSTNAME, PORT).unwrap();
 
     let mut tls = [0; 16384];
