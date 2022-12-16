@@ -9,12 +9,13 @@ use core::convert::Infallible;
 use defmt::*;
 use embassy_executor::Spawner;
 use embassy_net::tcp::TcpSocket;
-use embassy_net::{Stack, StackResources};
+use embassy_net::{Stack, StackResources, Ipv4Address, Ipv4Cidr};
 use embassy_rp::gpio::{Flex, Level, Output};
 use embassy_rp::peripherals::{PIN_23, PIN_24, PIN_25, PIN_29};
 use embedded_hal_1::spi::ErrorType;
 use embedded_hal_async::spi::{ExclusiveDevice, SpiBusFlush, SpiBusRead, SpiBusWrite};
 use embedded_io::asynch::Write;
+use    heapless::Vec;
 use static_cell::StaticCell;
 use {defmt_rtt as _, panic_probe as _};
 
@@ -75,12 +76,11 @@ async fn main(spawner: Spawner) {
     //control.join_open(env!("WIFI_NETWORK")).await;
     control.join_wpa2(env!("WIFI_NETWORK"), env!("WIFI_PASSWORD")).await;
 
-    let config = embassy_net::ConfigStrategy::Dhcp;
-    //let config = embassy_net::ConfigStrategy::Static(embassy_net::Config {
-    //    address: Ipv4Cidr::new(Ipv4Address::new(192, 168, 69, 2), 24),
-    //    dns_servers: Vec::new(),
-    //    gateway: Some(Ipv4Address::new(192, 168, 69, 1)),
-    //});
+    let config = embassy_net::ConfigStrategy::Static(embassy_net::Config {
+       address: Ipv4Cidr::new(Ipv4Address::new(192, 168, 31, 61), 24),
+       dns_servers: Vec::new(),
+       gateway: Some(Ipv4Address::new(192, 168, 31, 1)),
+    });
 
     // Generate random seed
     let seed = 0x0123_4567_89ab_cdef; // chosen by fair dice roll. guarenteed to be random.
