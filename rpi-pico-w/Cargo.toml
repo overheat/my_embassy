@@ -5,7 +5,7 @@ edition = "2021"
 
 
 [dependencies]
-cyw43 = { path = "../../../cyw43/", features = ["defmt"] }
+cyw43 = { path = "../../cyw43/", features = ["defmt"] }
 embassy-executor = { version = "0.1.0", features = [
     "defmt",
     "integrated-timers",

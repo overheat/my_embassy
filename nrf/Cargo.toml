@@ -20,38 +20,38 @@ nightly = [
 ]
 
 [dependencies]
-embassy-futures = { version = "0.1.0", path = "../../embassy-futures" }
-embassy-sync = { version = "0.1.0", path = "../../embassy-sync", features = [
+embassy-futures = { version = "0.1.0", path = "../../embassy/embassy-futures" }
+embassy-sync = { version = "0.1.0", path = "../../embassy/embassy-sync", features = [
     "defmt",
 ] }
-embassy-executor = { version = "0.1.0", path = "../../embassy-executor", features = [
+embassy-executor = { version = "0.1.0", path = "../../embassy/embassy-executor", features = [
     "defmt",
     "integrated-timers",
 ] }
-embassy-time = { version = "0.1.0", path = "../../embassy-time", features = [
+embassy-time = { version = "0.1.0", path = "../../embassy/embassy-time", features = [
     "defmt",
     "defmt-timestamp-uptime",
 ] }
-embassy-nrf = { version = "0.1.0", path = "../../embassy-nrf", features = [
+embassy-nrf = { version = "0.1.0", path = "../../embassy/embassy-nrf", features = [
     "defmt",
     "nrf52840",
     "time-driver-rtc1",
     "gpiote",
     "unstable-pac",
 ] }
-embassy-net = { version = "0.1.0", path = "../../embassy-net", features = [
+embassy-net = { version = "0.1.0", path = "../../embassy/embassy-net", features = [
     "defmt",
     "tcp",
     "dhcpv4",
     "medium-ethernet",
     "pool-16",
 ], optional = true }
-embassy-usb = { version = "0.1.0", path = "../../embassy-usb", features = [
+embassy-usb = { version = "0.1.0", path = "../../embassy/embassy-usb", features = [
     "defmt",
     "embassy-net",
 ], optional = true }
 embedded-io = "0.4.0"
-embassy-lora = { version = "0.1.0", path = "../../embassy-lora", features = [
+embassy-lora = { version = "0.1.0", path = "../../embassy/embassy-lora", features = [
     "sx126x",
     "time",
     "defmt",
