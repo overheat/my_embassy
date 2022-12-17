@@ -25,6 +25,8 @@ use static_cell::StaticCell;
 use {defmt_rtt as _, panic_probe as _};
 
 mod out;
+mod tcp;
+
 macro_rules! singleton {
     ($val:expr) => {{
         type T = impl Sized;
@@ -43,50 +45,6 @@ async fn wifi_task(
 #[embassy_executor::task]
 async fn net_task(stack: &'static Stack<cyw43::NetDevice<'static>>) -> ! {
     stack.run().await
-}
-
-
-#[embassy_executor::task]
-async fn tcp_task(stack: &'static Stack<cyw43::NetDevice<'static>>) -> ! {
-    let mut rx_buffer = [0; 4096];
-    let mut tx_buffer = [0; 4096];
-    let mut buf = [0; 4096];
-    loop {
-        let mut socket = TcpSocket::new(stack, &mut rx_buffer, &mut tx_buffer);
-        socket.set_timeout(Some(embassy_net::SmolDuration::from_secs(10)));
-
-        info!("Listening on TCP:1234...");
-        if let Err(e) = socket.accept(1234).await {
-            warn!("accept error: {:?}", e);
-            continue;
-        }
-
-        info!("Received connection from {:?}", socket.remote_endpoint());
-
-        loop {
-            let n = match socket.read(&mut buf).await {
-                Ok(0) => {
-                    warn!("read EOF");
-                    break;
-                }
-                Ok(n) => n,
-                Err(e) => {
-                    warn!("read error: {:?}", e);
-                    break;
-                }
-            };
-
-            info!("rxd {:02x}", &buf[..n]);
-
-            match socket.write_all(&buf[..n]).await {
-                Ok(()) => {}
-                Err(e) => {
-                    warn!("write error: {:?}", e);
-                    break;
-                }
-            };
-        }
-    }
 }
 
 
@@ -148,19 +106,12 @@ async fn main(spawner: Spawner) {
     unwrap!(spawner.spawn(net_task(stack)));
 
     // And now we can use it!
-
-    // Launch updater task
-    // spawner
-    //     .spawn(updater_task(stack, Flash::new(p.FLASH), seed))
-    //     .unwrap();
-
-
     info!("Application initialized.");
 
     Timer::after(Duration::from_secs(10)).await;
 
     unwrap!(spawner.spawn(out::pub_task(stack, seed)));
-    // unwrap!(spawner.spawn(tcp_task(stack)));
+    unwrap!(spawner.spawn(tcp::listen_task(stack)));
 
 
 }
