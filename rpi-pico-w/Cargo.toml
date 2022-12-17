@@ -1,5 +1,5 @@
 [package]
-name = "cyw43-example-rpi-pico-w"
+name = "my-embassy"
 version = "0.1.0"
 edition = "2021"
 
