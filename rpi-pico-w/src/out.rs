@@ -1,18 +1,12 @@
 use defmt::*;
-use embassy_executor::Spawner;
-use embassy_net::{Stack, StackResources, Ipv4Address, Ipv4Cidr};
-use embassy_net::tcp::TcpSocket;
+
+use embassy_net::{Stack};
 use embassy_net::tcp::client::{TcpClient, TcpClientState};
-use embassy_rp::gpio::{Flex, Level, Output};
-use embassy_rp::peripherals::{PIN_23, PIN_24, PIN_25, PIN_29};
 use embassy_time::{Duration, Timer};
-use embedded_hal_1::spi::ErrorType;
-use embedded_hal_async::spi::{ExclusiveDevice, SpiBusFlush, SpiBusRead, SpiBusWrite};
-use embedded_io::asynch::Write;
-use heapless::{String, Vec};
+use heapless::{String};
 use reqwless::client::{HttpClient, TlsConfig};
 use reqwless::request::{ContentType, Method};
-use static_cell::StaticCell;
+
 
 /// HTTP endpoint hostname
 const HOSTNAME: &str = "http.sandbox.drogue.cloud";
@@ -41,7 +35,7 @@ pub async fn pub_task(stack: &'static Stack<cyw43::NetDevice<'static>>, seed: u6
     static CLIENT_STATE: TcpClientState<1, 1024, 1024> = TcpClientState::new();
     let client = TcpClient::new(&stack, &CLIENT_STATE);
 
-    let mut url: String<128> = String::from("https://http.sandbox.drogue.cloud/v1/pico");
+    let url: String<128> = String::from("https://http.sandbox.drogue.cloud/v1/pico");
     // write!(url, "https://{}:{}/v1/pico", HOSTNAME, PORT).unwrap();
 
     let mut tls = [0; 16384];
@@ -76,7 +70,7 @@ pub async fn pub_task(stack: &'static Stack<cyw43::NetDevice<'static>>, seed: u6
                     let _s = core::str::from_utf8(payload).unwrap();
                 }
             }
-            Err(e) => {
+            Err(_e) => {
                 // warn!("Error doing HTTP request: {:?}", e);
                 warn!("Error doing HTTP request: ");
             }

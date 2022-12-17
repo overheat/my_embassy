@@ -1,9 +1,9 @@
 use core::convert::Infallible;
 
-use embassy_rp::gpio::{Flex, Level, Output};
-use embassy_rp::peripherals::{PIN_23, PIN_24, PIN_25, PIN_29};
+use embassy_rp::gpio::{Flex, Output};
+use embassy_rp::peripherals::{PIN_24, PIN_29};
 use embedded_hal_1::spi::ErrorType;
-use embedded_hal_async::spi::{ExclusiveDevice, SpiBusFlush, SpiBusRead, SpiBusWrite};
+use embedded_hal_async::spi::{SpiBusFlush, SpiBusRead, SpiBusWrite};
 
 
 pub struct Spi {

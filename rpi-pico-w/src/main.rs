@@ -4,23 +4,14 @@
 #![feature(async_fn_in_trait)]
 #![allow(incomplete_features)]
 
-use core::fmt::Write as _;
-
 use defmt::*;
-use drogue_device::net::dns;
 use embassy_executor::Spawner;
 use embassy_net::{Stack, StackResources, Ipv4Address, Ipv4Cidr};
-use embassy_net::tcp::TcpSocket;
-use embassy_net::tcp::client::{TcpClient, TcpClientState};
 use embassy_rp::gpio::{Flex, Level, Output};
-use embassy_rp::peripherals::{PIN_23, PIN_24, PIN_25, PIN_29};
+use embassy_rp::peripherals::{PIN_23, PIN_25};
 use embassy_time::{Duration, Timer};
-use embedded_hal_1::spi::ErrorType;
-use embedded_hal_async::spi::{ExclusiveDevice, SpiBusFlush, SpiBusRead, SpiBusWrite};
-use embedded_io::asynch::Write;
-use heapless::{String, Vec};
-use reqwless::client::{HttpClient, TlsConfig};
-use reqwless::request::{ContentType, Method};
+use embedded_hal_async::spi::{ExclusiveDevice};
+use heapless::{Vec};
 use static_cell::StaticCell;
 use {defmt_rtt as _, panic_probe as _};
 

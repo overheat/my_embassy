@@ -1,18 +1,8 @@
 use defmt::*;
-use embassy_executor::Spawner;
-use embassy_net::{Stack, StackResources, Ipv4Address, Ipv4Cidr};
+use embassy_net::{Stack};
 use embassy_net::tcp::TcpSocket;
-use embassy_net::tcp::client::{TcpClient, TcpClientState};
-use embassy_rp::gpio::{Flex, Level, Output};
-use embassy_rp::peripherals::{PIN_23, PIN_24, PIN_25, PIN_29};
-use embassy_time::{Duration, Timer};
-use embedded_hal_1::spi::ErrorType;
-use embedded_hal_async::spi::{ExclusiveDevice, SpiBusFlush, SpiBusRead, SpiBusWrite};
+use embedded_hal_async::spi::{SpiBusRead};
 use embedded_io::asynch::Write;
-use heapless::{String, Vec};
-use reqwless::client::{HttpClient, TlsConfig};
-use reqwless::request::{ContentType, Method};
-use static_cell::StaticCell;
 
 #[embassy_executor::task]
 pub async fn listen_task(stack: &'static Stack<cyw43::NetDevice<'static>>) -> ! {
