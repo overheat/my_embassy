@@ -10,6 +10,7 @@ use core::fmt::Write as _;
 use defmt::*;
 use embassy_executor::Spawner;
 use embassy_net::{Stack, StackResources, Ipv4Address, Ipv4Cidr};
+use embassy_net::tcp::TcpSocket;
 use embassy_net::tcp::client::{TcpClient, TcpClientState};
 use embassy_rp::gpio::{Flex, Level, Output};
 use embassy_rp::peripherals::{PIN_23, PIN_24, PIN_25, PIN_29};
@@ -23,26 +24,7 @@ use reqwless::request::{ContentType, Method};
 use static_cell::StaticCell;
 use {defmt_rtt as _, panic_probe as _};
 
-/// HTTP endpoint hostname
-const HOSTNAME: &str = "http.sandbox.drogue.cloud";
-
-/// HTTP endpoint port
-const PORT: &str = "443";
-
-/// HTTP username
-const USERNAME: &str = "device1@embassy-app";
-
-/// HTTP password
-const PASSWORD: &str = "hey-rodney";
-
-#[path = "../common/dns.rs"]
-mod dns;
-use dns::*;
-
-#[path = "../common/temperature.rs"]
-mod temperature;
-use temperature::*;
-
+mod out;
 macro_rules! singleton {
     ($val:expr) => {{
         type T = impl Sized;
@@ -62,6 +44,51 @@ async fn wifi_task(
 async fn net_task(stack: &'static Stack<cyw43::NetDevice<'static>>) -> ! {
     stack.run().await
 }
+
+
+#[embassy_executor::task]
+async fn tcp_task(stack: &'static Stack<cyw43::NetDevice<'static>>) -> ! {
+    let mut rx_buffer = [0; 4096];
+    let mut tx_buffer = [0; 4096];
+    let mut buf = [0; 4096];
+    loop {
+        let mut socket = TcpSocket::new(stack, &mut rx_buffer, &mut tx_buffer);
+        socket.set_timeout(Some(embassy_net::SmolDuration::from_secs(10)));
+
+        info!("Listening on TCP:1234...");
+        if let Err(e) = socket.accept(1234).await {
+            warn!("accept error: {:?}", e);
+            continue;
+        }
+
+        info!("Received connection from {:?}", socket.remote_endpoint());
+
+        loop {
+            let n = match socket.read(&mut buf).await {
+                Ok(0) => {
+                    warn!("read EOF");
+                    break;
+                }
+                Ok(n) => n,
+                Err(e) => {
+                    warn!("read error: {:?}", e);
+                    break;
+                }
+            };
+
+            info!("rxd {:02x}", &buf[..n]);
+
+            match socket.write_all(&buf[..n]).await {
+                Ok(()) => {}
+                Err(e) => {
+                    warn!("write error: {:?}", e);
+                    break;
+                }
+            };
+        }
+    }
+}
+
 
 #[embassy_executor::main]
 async fn main(spawner: Spawner) {
@@ -102,15 +129,15 @@ async fn main(spawner: Spawner) {
 
     // let config = embassy_net::ConfigStrategy::Dhcp;
     let config = embassy_net::ConfigStrategy::Static(embassy_net::Config {
-        address: Ipv4Cidr::new(Ipv4Address::new(192, 168, 88, 111), 24),
+        address: Ipv4Cidr::new(Ipv4Address::new(192, 168, 31, 111), 24),
         dns_servers: Vec::new(),
-        gateway: Some(Ipv4Address::new(192, 168, 88, 1)),
+        gateway: Some(Ipv4Address::new(192, 168, 31, 1)),
     });
 
     // Generate random seed
     let seed = 0x0123_4567_89ab_cdef; // chosen by fair dice roll. guarenteed to be random.
 
-    // // Init network stack
+    // Init network stack
     let stack = &*singleton!(Stack::new(
         net_device,
         config,
@@ -122,98 +149,20 @@ async fn main(spawner: Spawner) {
 
     // And now we can use it!
 
-    // let mut rx_buffer = [0; 4096];
-    // let mut tx_buffer = [0; 4096];
-    // let mut buf = [0; 4096];
-
-    static CLIENT_STATE: TcpClientState<1, 1024, 1024> = TcpClientState::new();
-    let client = TcpClient::new(&stack, &CLIENT_STATE);
-
     // Launch updater task
     // spawner
     //     .spawn(updater_task(stack, Flash::new(p.FLASH), seed))
     //     .unwrap();
 
-    let mut url: String<128> = String::from("https://http.sandbox.drogue.cloud/v1/pico");
-    // write!(url, "https://{}:{}/v1/pico", HOSTNAME, PORT).unwrap();
-
-    let mut tls = [0; 16384];
-    let mut client = HttpClient::new_with_tls(&client, &DNS, TlsConfig::new(seed as u64, &mut tls));
 
     info!("Application initialized.");
 
     Timer::after(Duration::from_secs(10)).await;
-    loop {
-        Timer::after(Duration::from_secs(5)).await;
-        let sensor_data = TemperatureData {
-            geoloc: None,
-            temp: Some(22.2),
-            hum: None,
-        };
 
-        info!("Reporting sensor data: {:?}", sensor_data.temp);
+    unwrap!(spawner.spawn(out::pub_task(stack, seed)));
+    // unwrap!(spawner.spawn(tcp_task(stack)));
 
-        let tx: String<128> = serde_json_core::ser::to_string(&sensor_data).unwrap();
-        let mut rx_buf = [0; 1024];
-        let response = client
-            .request(Method::POST, &url)
-            .await
-            .unwrap()
-            .basic_auth(USERNAME.trim_end(), PASSWORD.trim_end())
-            .body(tx.as_bytes())
-            .content_type(ContentType::ApplicationJson)
-            .send(&mut rx_buf[..])
-            .await;
 
-        match response {
-            Ok(response) => {
-                // info!("Response status: {:?}", response.status);
-                if let Some(payload) = response.body {
-                    let _s = core::str::from_utf8(payload).unwrap();
-                }
-            }
-            Err(e) => {
-                // warn!("Error doing HTTP request: {:?}", e);
-                warn!("Error doing HTTP request: ");
-            }
-        }
-        info!("Telemetry reported successfully");
-
-        // let mut socket = TcpSocket::new(stack, &mut rx_buffer, &mut tx_buffer);
-        // socket.set_timeout(Some(embassy_net::SmolDuration::from_secs(10)));
-
-        // info!("Listening on TCP:1234...");
-        // if let Err(e) = socket.accept(1234).await {
-        //     warn!("accept error: {:?}", e);
-        //     continue;
-        // }
-
-        // info!("Received connection from {:?}", socket.remote_endpoint());
-
-        // loop {
-        //     let n = match socket.read(&mut buf).await {
-        //         Ok(0) => {
-        //             warn!("read EOF");
-        //             break;
-        //         }
-        //         Ok(n) => n,
-        //         Err(e) => {
-        //             warn!("read error: {:?}", e);
-        //             break;
-        //         }
-        //     };
-
-        //     info!("rxd {:02x}", &buf[..n]);
-
-        //     match socket.write_all(&buf[..n]).await {
-        //         Ok(()) => {}
-        //         Err(e) => {
-        //             warn!("write error: {:?}", e);
-        //             break;
-        //         }
-        //     };
-        // }
-    }
 }
 
 struct MySpi {
