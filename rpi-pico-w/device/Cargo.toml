@@ -50,7 +50,7 @@ defmt = { version = "0.3", optional = true }
 reqwless = "0.3.0"
 
 # Handy macros, e.g. drogue::config
-drogue-device-macros = { path = "../macros" }
+drogue-device-macros = { path = "../../../drogue-device/macros/" }
 
 ector = { version = "0.1.0", default-features = false, optional = true }
 
