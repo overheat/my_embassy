@@ -7,6 +7,7 @@
 use core::fmt::Write as _;
 
 use defmt::*;
+use drogue_device::net::dns;
 use embassy_executor::Spawner;
 use embassy_net::{Stack, StackResources, Ipv4Address, Ipv4Cidr};
 use embassy_net::tcp::TcpSocket;
@@ -85,10 +86,14 @@ async fn main(spawner: Spawner) {
     //control.join_open(env!("WIFI_NETWORK")).await;
     control.join_wpa2(env!("WIFI_NETWORK"), env!("WIFI_PASSWORD")).await;
 
+    let mut dns_servers = Vec::new();
+    dns_servers.push(Ipv4Address::new(1, 1, 1, 1)); // Cloudflare DNS
+    dns_servers.push(Ipv4Address::new(8, 8, 8, 8)); // Google DNS
+
     // let config = embassy_net::ConfigStrategy::Dhcp;
     let config = embassy_net::ConfigStrategy::Static(embassy_net::Config {
         address: Ipv4Cidr::new(Ipv4Address::new(192, 168, 31, 111), 24),
-        dns_servers: Vec::new(),
+        dns_servers,
         gateway: Some(Ipv4Address::new(192, 168, 31, 1)),
     });
 
