@@ -4,7 +4,6 @@
 #![feature(async_fn_in_trait)]
 #![allow(incomplete_features)]
 
-use core::convert::Infallible;
 use core::fmt::Write as _;
 
 use defmt::*;
@@ -26,6 +25,7 @@ use {defmt_rtt as _, panic_probe as _};
 
 mod out;
 mod tcp;
+mod wifi;
 
 macro_rules! singleton {
     ($val:expr) => {{
@@ -37,7 +37,7 @@ macro_rules! singleton {
 
 #[embassy_executor::task]
 async fn wifi_task(
-    runner: cyw43::Runner<'static, Output<'static, PIN_23>, ExclusiveDevice<MySpi, Output<'static, PIN_25>>>,
+    runner: cyw43::Runner<'static, Output<'static, PIN_23>, ExclusiveDevice<wifi::Spi, Output<'static, PIN_25>>>,
 ) -> ! {
     runner.run().await
 }
@@ -72,7 +72,7 @@ async fn main(spawner: Spawner) {
     dio.set_low();
     dio.set_as_output();
 
-    let bus = MySpi { clk, dio };
+    let bus = wifi::Spi { clk, dio };
     let spi = ExclusiveDevice::new(bus, cs);
 
     let state = singleton!(cyw43::State::new());
@@ -114,77 +114,4 @@ async fn main(spawner: Spawner) {
     unwrap!(spawner.spawn(tcp::listen_task(stack)));
 
 
-}
-
-struct MySpi {
-    /// SPI clock
-    clk: Output<'static, PIN_29>,
-
-    /// 4 signals, all in one!!
-    /// - SPI MISO
-    /// - SPI MOSI
-    /// - IRQ
-    /// - strap to set to gSPI mode on boot.
-    dio: Flex<'static, PIN_24>,
-}
-
-impl ErrorType for MySpi {
-    type Error = Infallible;
-}
-
-impl SpiBusFlush for MySpi {
-    async fn flush(&mut self) -> Result<(), Self::Error> {
-        Ok(())
-    }
-}
-
-impl SpiBusRead<u32> for MySpi {
-    async fn read(&mut self, words: &mut [u32]) -> Result<(), Self::Error> {
-        self.dio.set_as_input();
-        for word in words {
-            let mut w = 0;
-            for _ in 0..32 {
-                w = w << 1;
-
-                // rising edge, sample data
-                if self.dio.is_high() {
-                    w |= 0x01;
-                }
-                self.clk.set_high();
-
-                // falling edge
-                self.clk.set_low();
-            }
-            *word = w
-        }
-
-        Ok(())
-    }
-}
-
-impl SpiBusWrite<u32> for MySpi {
-    async fn write(&mut self, words: &[u32]) -> Result<(), Self::Error> {
-        self.dio.set_as_output();
-        for word in words {
-            let mut word = *word;
-            for _ in 0..32 {
-                // falling edge, setup data
-                self.clk.set_low();
-                if word & 0x8000_0000 == 0 {
-                    self.dio.set_low();
-                } else {
-                    self.dio.set_high();
-                }
-
-                // rising edge
-                self.clk.set_high();
-
-                word = word << 1;
-            }
-        }
-        self.clk.set_low();
-
-        self.dio.set_as_input();
-        Ok(())
-    }
 }
