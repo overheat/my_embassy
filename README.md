@@ -5,7 +5,7 @@
 ## Running the example
 
 - `cargo install probe-run`
-- `cd examples/rpi-pico-w`
+- `cd rpi-pico-w`
 - `WIFI_NETWORK=MyWifiNetwork WIFI_PASSWORD=MyWifiPassword cargo run --release`
 
 ## Receive cloud message
