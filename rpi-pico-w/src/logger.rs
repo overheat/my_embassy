@@ -1,9 +1,6 @@
-
-use embassy_rp::{
-        interrupt,
-        peripherals::{USB},
-        usb::Driver,
-    };
+use embassy_rp::interrupt;
+use embassy_rp::peripherals::USB;
+use embassy_rp::usb::Driver;
 #[embassy_executor::task]
 pub async fn usb_task(u: USB) {
     let irq = interrupt::take!(USBCTRL_IRQ);

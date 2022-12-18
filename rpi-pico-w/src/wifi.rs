@@ -1,14 +1,14 @@
 use core::convert::Infallible;
 
+use embassy_net::{Ipv4Address, Ipv4Cidr, Stack, StackResources};
 use embassy_rp::gpio::{Flex, Level, Output};
 use embassy_rp::peripherals::{PIN_23, PIN_24, PIN_25, PIN_29};
-use embedded_hal_1::spi::ErrorType;
-use embedded_hal_async::spi::{SpiBusFlush, SpiBusRead, SpiBusWrite, ExclusiveDevice};
-use embassy_net::{Stack, StackResources, Ipv4Address, Ipv4Cidr};
 use embassy_sync::blocking_mutex::raw::NoopRawMutex;
-use embassy_sync::channel::{Sender};
+use embassy_sync::channel::Sender;
+use embedded_hal_1::spi::ErrorType;
+use embedded_hal_async::spi::{ExclusiveDevice, SpiBusFlush, SpiBusRead, SpiBusWrite};
+use heapless::Vec;
 use static_cell::StaticCell;
-use heapless::{Vec};
 
 macro_rules! singleton {
     ($val:expr) => {{
@@ -18,8 +18,14 @@ macro_rules! singleton {
     }};
 }
 #[embassy_executor::task]
-pub async fn init(pwr: PIN_23,cs: PIN_25,clk: PIN_29,dio: PIN_24, seed: u64,
-                    sender: Sender<'static, NoopRawMutex, &'static Stack<cyw43::NetDevice<'static>>, 1>) {
+pub async fn init(
+    pwr: PIN_23,
+    cs: PIN_25,
+    clk: PIN_29,
+    dio: PIN_24,
+    seed: u64,
+    sender: Sender<'static, NoopRawMutex, &'static Stack<cyw43::NetDevice<'static>>, 1>,
+) {
     // Include the WiFi firmware and Country Locale Matrix (CLM) blobs.
     // let fw = include_bytes!("../firmware/43439A0.bin");
     // let clm = include_bytes!("../firmware/43439A0_clm.bin");

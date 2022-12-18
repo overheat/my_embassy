@@ -1,9 +1,9 @@
 use defmt::*;
-use embassy_net::{Stack};
 use embassy_net::tcp::client::{TcpClient, TcpClientState};
+use embassy_net::Stack;
 use embassy_sync::blocking_mutex::raw::NoopRawMutex;
-use embassy_sync::channel::{Receiver};
-use heapless::{String};
+use embassy_sync::channel::Receiver;
+use heapless::String;
 use reqwless::client::{HttpClient, TlsConfig};
 use reqwless::request::{ContentType, Method};
 
@@ -27,9 +27,12 @@ use dns::*;
 mod temperature;
 use temperature::*;
 
-
 #[embassy_executor::task]
-pub async fn pub_task(stack: &'static Stack<cyw43::NetDevice<'static>>, seed: u64, receiver: Receiver<'static, NoopRawMutex, f32, 1>) -> ! {
+pub async fn pub_task(
+    stack: &'static Stack<cyw43::NetDevice<'static>>,
+    seed: u64,
+    receiver: Receiver<'static, NoopRawMutex, f32, 1>,
+) -> ! {
     static CLIENT_STATE: TcpClientState<1, 1024, 1024> = TcpClientState::new();
     let client = TcpClient::new(&stack, &CLIENT_STATE);
 
@@ -75,6 +78,5 @@ pub async fn pub_task(stack: &'static Stack<cyw43::NetDevice<'static>>, seed: u6
             }
         }
         info!("Telemetry reported successfully");
-
     }
 }

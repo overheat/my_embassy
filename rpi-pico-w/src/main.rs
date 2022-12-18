@@ -6,12 +6,11 @@
 
 use defmt::*;
 use embassy_executor::Spawner;
-
+use embassy_net::Stack;
 use embassy_sync::blocking_mutex::raw::NoopRawMutex;
-use embassy_sync::channel::{Channel};
-use embassy_net::{Stack};
-use {defmt_rtt as _, panic_probe as _};
+use embassy_sync::channel::Channel;
 use static_cell::StaticCell;
+use {defmt_rtt as _, panic_probe as _};
 
 mod get_temperature;
 mod logger;
@@ -39,7 +38,16 @@ async fn main(spawner: Spawner) {
 
     // Generate random seed
     let seed = 0x0123_4567_89ab_cdef; // chosen by fair dice roll. guarenteed to be random.
-    spawner.spawn(wifi::init(p.PIN_23, p.PIN_25, p.PIN_29, p.PIN_24, seed, wifi_stack.sender())).unwrap();
+    spawner
+        .spawn(wifi::init(
+            p.PIN_23,
+            p.PIN_25,
+            p.PIN_29,
+            p.PIN_24,
+            seed,
+            wifi_stack.sender(),
+        ))
+        .unwrap();
 
     let stack = wifi_stack.recv().await;
 
@@ -51,9 +59,9 @@ async fn main(spawner: Spawner) {
 
     // spawner.spawn(logger::usb_task(p.USB)).unwrap();
     spawner.spawn(tcp::listen_task(stack, _in.sender())).unwrap();
-    spawner.spawn(get_temperature::get(p.ADC, _in.receiver(), out.sender())).unwrap();
+    spawner
+        .spawn(get_temperature::get(p.ADC, _in.receiver(), out.sender()))
+        .unwrap();
     spawner.spawn(out::pub_task(stack, seed, out.receiver())).unwrap();
     // spawner.spawn(udp::listen_task(stack)).unwrap();
-
-
 }

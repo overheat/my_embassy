@@ -1,7 +1,6 @@
 use defmt::*;
-use embassy_net::{Stack};
 use embassy_net::udp::UdpSocket;
-use embassy_net::{PacketMetadata};
+use embassy_net::{PacketMetadata, Stack};
 
 #[embassy_executor::task]
 pub async fn listen_task(stack: &'static Stack<cyw43::NetDevice<'static>>) -> ! {
@@ -24,4 +23,3 @@ pub async fn listen_task(stack: &'static Stack<cyw43::NetDevice<'static>>) -> ! 
         socket.send_to(&buf[..n], ep).await.unwrap();
     }
 }
-
