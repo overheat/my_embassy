@@ -32,6 +32,7 @@ embassy-net = { version = "0.1.0", features = [
     "unstable-traits",
     "nightly",
 ] }
+embassy-usb-logger = "0.1.0"
 atomic-polyfill = "0.1.5"
 static_cell = "1.0"
 
@@ -66,6 +67,7 @@ embassy-futures = { git = "https://github.com/embassy-rs/embassy", rev = "645fb6
 embassy-sync = { git = "https://github.com/embassy-rs/embassy", rev = "645fb66a5122bdc8180e0e65d076ca103431a426" }
 embassy-rp = { git = "https://github.com/embassy-rs/embassy", rev = "645fb66a5122bdc8180e0e65d076ca103431a426" }
 embassy-net = { git = "https://github.com/embassy-rs/embassy", rev = "645fb66a5122bdc8180e0e65d076ca103431a426" }
+embassy-usb-logger = { git = "https://github.com/embassy-rs/embassy", rev = "5e94b8060b7f1af8118ca1f943181ce70be92057" }
 
 [profile.dev]
 debug = 2

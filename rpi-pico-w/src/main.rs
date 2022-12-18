@@ -7,7 +7,10 @@
 use defmt::*;
 use embassy_executor::Spawner;
 use embassy_net::{Stack, StackResources, Ipv4Address, Ipv4Cidr};
+use embassy_rp::interrupt;
 use embassy_rp::gpio::{Flex, Level, Output};
+use embassy_rp::adc::{Adc, Config};
+use embassy_rp::usb::Driver;
 use embassy_rp::peripherals::{PIN_23, PIN_25};
 use embassy_time::{Duration, Timer};
 use embedded_hal_async::spi::{ExclusiveDevice};
@@ -20,6 +23,7 @@ mod tcp;
 mod udp;
 mod wifi;
 mod get_temperature;
+mod logger;
 
 macro_rules! singleton {
     ($val:expr) => {{
@@ -44,9 +48,10 @@ async fn net_task(stack: &'static Stack<cyw43::NetDevice<'static>>) -> ! {
 
 #[embassy_executor::main]
 async fn main(spawner: Spawner) {
-    info!("Hello World!");
-
     let p = embassy_rp::init(Default::default());
+
+
+
 
     // Include the WiFi firmware and Country Locale Matrix (CLM) blobs.
     // let fw = include_bytes!("../firmware/43439A0.bin");
@@ -101,17 +106,18 @@ async fn main(spawner: Spawner) {
         seed
     ));
 
-    unwrap!(spawner.spawn(net_task(stack)));
+    spawner.spawn(net_task(stack)).unwrap();
 
     // And now we can use it!
     info!("Application initialized.");
 
     Timer::after(Duration::from_secs(10)).await;
 
-    let temperature = get_temperature::get();
-    unwrap!(spawner.spawn(out::pub_task(stack, seed, temperature)));
-    unwrap!(spawner.spawn(tcp::listen_task(stack)));
-    // unwrap!(spawner.spawn(udp::listen_task(stack)));
+    spawner.spawn(get_temperature::get(p.ADC)).unwrap();
+    spawner.spawn(logger::usb_task(p.USB)).unwrap();
+    spawner.spawn(out::pub_task(stack, seed)).unwrap();
+    spawner.spawn(tcp::listen_task(stack)).unwrap();
+    // spawner.spawn(udp::listen_task(stack)).unwrap();
 
 
 }

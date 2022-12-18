@@ -20,7 +20,6 @@ const USERNAME: &str = "device1@embassy-app";
 /// HTTP password
 const PASSWORD: &str = "hey-rodney";
 
-
 #[path = "../common/dns.rs"]
 mod dns;
 use dns::*;
@@ -31,7 +30,7 @@ use temperature::*;
 
 
 #[embassy_executor::task]
-pub async fn pub_task(stack: &'static Stack<cyw43::NetDevice<'static>>, seed: u64, temperature: f32) -> ! {
+pub async fn pub_task(stack: &'static Stack<cyw43::NetDevice<'static>>, seed: u64) -> ! {
     static CLIENT_STATE: TcpClientState<1, 1024, 1024> = TcpClientState::new();
     let client = TcpClient::new(&stack, &CLIENT_STATE);
 
@@ -45,7 +44,7 @@ pub async fn pub_task(stack: &'static Stack<cyw43::NetDevice<'static>>, seed: u6
         Timer::after(Duration::from_secs(5)).await;
         let sensor_data = TemperatureData {
             geoloc: None,
-            temp: Some(temperature),
+            temp: Some(22.3),
             hum: None,
         };
 
