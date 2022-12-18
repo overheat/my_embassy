@@ -1,5 +1,4 @@
 use core::convert::Infallible;
-
 use embassy_rp::gpio::{Flex, Output};
 use embassy_rp::peripherals::{PIN_23, PIN_24, PIN_25, PIN_29};
 use embedded_hal_1::spi::ErrorType;

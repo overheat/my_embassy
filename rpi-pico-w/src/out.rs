@@ -1,15 +1,11 @@
 use defmt::*;
-
 use embassy_net::{Stack};
 use embassy_net::tcp::client::{TcpClient, TcpClientState};
-use embassy_time::{Duration, Timer};
 use embassy_sync::blocking_mutex::raw::NoopRawMutex;
-use embassy_sync::channel::{Channel, Receiver, Sender};
+use embassy_sync::channel::{Receiver};
 use heapless::{String};
 use reqwless::client::{HttpClient, TlsConfig};
 use reqwless::request::{ContentType, Method};
-
-
 
 /// HTTP endpoint hostname
 const HOSTNAME: &str = "http.sandbox.drogue.cloud";

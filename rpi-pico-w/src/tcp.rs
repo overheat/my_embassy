@@ -3,7 +3,7 @@ use embassy_net::{Stack};
 use embassy_net::tcp::TcpSocket;
 use embedded_io::asynch::Write;
 use embassy_sync::blocking_mutex::raw::NoopRawMutex;
-use embassy_sync::channel::{Channel, Receiver, Sender};
+use embassy_sync::channel::{Sender};
 
 #[embassy_executor::task]
 pub async fn listen_task(stack: &'static Stack<cyw43::NetDevice<'static>>, 

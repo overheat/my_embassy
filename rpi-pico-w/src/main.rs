@@ -7,14 +7,10 @@
 use defmt::*;
 use embassy_executor::Spawner;
 use embassy_net::{Stack, StackResources, Ipv4Address, Ipv4Cidr};
-use embassy_rp::interrupt;
 use embassy_rp::gpio::{Flex, Level, Output};
-use embassy_rp::adc::{Adc, Config};
-use embassy_rp::usb::Driver;
-use embassy_rp::peripherals::{PIN_23, PIN_25};
 use embassy_time::{Duration, Timer};
 use embassy_sync::blocking_mutex::raw::NoopRawMutex;
-use embassy_sync::channel::{Channel, Receiver, Sender};
+use embassy_sync::channel::{Channel};
 use embedded_hal_async::spi::{ExclusiveDevice};
 use heapless::{Vec};
 use static_cell::StaticCell;

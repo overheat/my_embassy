@@ -1,5 +1,4 @@
 
-use defmt::*;
 use embassy_net::{Stack};
 
 #[embassy_executor::task]

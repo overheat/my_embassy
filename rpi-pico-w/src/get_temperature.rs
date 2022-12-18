@@ -1,17 +1,15 @@
 use defmt::*;
 use embassy_rp::peripherals::ADC;
-use embassy_time::{Duration, Timer};
 use {defmt_rtt as _, panic_probe as _};
 use embassy_rp::adc::{Adc, Config};
 use embassy_rp::interrupt;
-use embassy_rp::Peripheral;
 use embassy_sync::blocking_mutex::raw::NoopRawMutex;
-use embassy_sync::channel::{Channel, Receiver, Sender};
+use embassy_sync::channel::{Receiver, Sender};
 
 #[embassy_executor::task]
 pub async fn get(a: ADC, receiver: Receiver<'static, NoopRawMutex, crate::Services, 1>, sender: Sender<'static, NoopRawMutex, f32, 1>) -> ! {     
-    let adc_irq = interrupt::take!(ADC_IRQ_FIFO);
-    let mut adc = Adc::new(a, adc_irq, Config::default());
+    let irq = interrupt::take!(ADC_IRQ_FIFO);
+    let mut adc = Adc::new(a, irq, Config::default());
 
     loop {
         receiver.recv().await;
