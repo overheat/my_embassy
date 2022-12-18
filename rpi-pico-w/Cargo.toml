@@ -33,6 +33,7 @@ embassy-net = { version = "0.1.0", features = [
     "nightly",
 ] }
 embassy-usb-logger = "0.1.0"
+embassy-sync = { version = "0.1.0", default-features = false }
 atomic-polyfill = "0.1.5"
 static_cell = "1.0"
 

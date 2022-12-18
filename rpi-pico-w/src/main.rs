@@ -13,6 +13,8 @@ use embassy_rp::adc::{Adc, Config};
 use embassy_rp::usb::Driver;
 use embassy_rp::peripherals::{PIN_23, PIN_25};
 use embassy_time::{Duration, Timer};
+use embassy_sync::blocking_mutex::raw::NoopRawMutex;
+use embassy_sync::channel::{Channel, Receiver, Sender};
 use embedded_hal_async::spi::{ExclusiveDevice};
 use heapless::{Vec};
 use static_cell::StaticCell;
@@ -33,6 +35,9 @@ macro_rules! singleton {
     }};
 }
 
+
+static CHANNEL: StaticCell<Channel<NoopRawMutex, f32, 1>> = StaticCell::new();
+
 #[embassy_executor::task]
 async fn wifi_task(
     runner: cyw43::Runner<'static, Output<'static, PIN_23>, ExclusiveDevice<wifi::Spi, Output<'static, PIN_25>>>,
@@ -49,9 +54,7 @@ async fn net_task(stack: &'static Stack<cyw43::NetDevice<'static>>) -> ! {
 #[embassy_executor::main]
 async fn main(spawner: Spawner) {
     let p = embassy_rp::init(Default::default());
-
-
-
+    let channel = CHANNEL.init(Channel::new());
 
     // Include the WiFi firmware and Country Locale Matrix (CLM) blobs.
     // let fw = include_bytes!("../firmware/43439A0.bin");
@@ -113,10 +116,10 @@ async fn main(spawner: Spawner) {
 
     Timer::after(Duration::from_secs(10)).await;
 
-    spawner.spawn(get_temperature::get(p.ADC)).unwrap();
-    spawner.spawn(logger::usb_task(p.USB)).unwrap();
-    spawner.spawn(out::pub_task(stack, seed)).unwrap();
-    spawner.spawn(tcp::listen_task(stack)).unwrap();
+    // spawner.spawn(logger::usb_task(p.USB)).unwrap();
+    spawner.spawn(get_temperature::get(p.ADC, channel.sender())).unwrap();
+    spawner.spawn(out::pub_task(stack, seed, channel.receiver())).unwrap();
+    // spawner.spawn(tcp::listen_task(stack)).unwrap();
     // spawner.spawn(udp::listen_task(stack)).unwrap();
 
 
