@@ -1,10 +1,17 @@
 use core::convert::Infallible;
 
 use embassy_rp::gpio::{Flex, Output};
-use embassy_rp::peripherals::{PIN_24, PIN_29};
+use embassy_rp::peripherals::{PIN_23, PIN_24, PIN_25, PIN_29};
 use embedded_hal_1::spi::ErrorType;
 use embedded_hal_async::spi::{SpiBusFlush, SpiBusRead, SpiBusWrite};
+use embedded_hal_async::spi::{ExclusiveDevice};
 
+#[embassy_executor::task]
+pub async fn wifi_task(
+    runner: cyw43::Runner<'static, Output<'static, PIN_23>, ExclusiveDevice<Spi, Output<'static, PIN_25>>>,
+) -> ! {
+    runner.run().await
+}
 
 pub struct Spi {
     /// SPI clock

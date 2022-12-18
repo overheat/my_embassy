@@ -20,12 +20,13 @@ use heapless::{Vec};
 use static_cell::StaticCell;
 use {defmt_rtt as _, panic_probe as _};
 
+mod get_temperature;
+mod logger;
 mod out;
 mod tcp;
 mod udp;
+mod v4;
 mod wifi;
-mod get_temperature;
-mod logger;
 
 macro_rules! singleton {
     ($val:expr) => {{
@@ -38,17 +39,6 @@ macro_rules! singleton {
 
 static CHANNEL: StaticCell<Channel<NoopRawMutex, f32, 1>> = StaticCell::new();
 
-#[embassy_executor::task]
-async fn wifi_task(
-    runner: cyw43::Runner<'static, Output<'static, PIN_23>, ExclusiveDevice<wifi::Spi, Output<'static, PIN_25>>>,
-) -> ! {
-    runner.run().await
-}
-
-#[embassy_executor::task]
-async fn net_task(stack: &'static Stack<cyw43::NetDevice<'static>>) -> ! {
-    stack.run().await
-}
 
 
 #[embassy_executor::main]
@@ -80,7 +70,7 @@ async fn main(spawner: Spawner) {
     let state = singleton!(cyw43::State::new());
     let (mut control, runner) = cyw43::new(state, pwr, spi, fw).await;
 
-    spawner.spawn(wifi_task(runner)).unwrap();
+    spawner.spawn(wifi::wifi_task(runner)).unwrap();
 
     let net_device = control.init(clm).await;
 
@@ -109,7 +99,7 @@ async fn main(spawner: Spawner) {
         seed
     ));
 
-    spawner.spawn(net_task(stack)).unwrap();
+    spawner.spawn(v4::net_task(stack)).unwrap();
 
     // And now we can use it!
     info!("Application initialized.");
