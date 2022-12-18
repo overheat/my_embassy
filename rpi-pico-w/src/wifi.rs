@@ -1,12 +1,12 @@
 use core::convert::Infallible;
-use embassy_rp::Peripheral;
+
 use embassy_rp::gpio::{Flex, Level, Output};
 use embassy_rp::peripherals::{PIN_23, PIN_24, PIN_25, PIN_29};
 use embedded_hal_1::spi::ErrorType;
 use embedded_hal_async::spi::{SpiBusFlush, SpiBusRead, SpiBusWrite, ExclusiveDevice};
 use embassy_net::{Stack, StackResources, Ipv4Address, Ipv4Cidr};
 use embassy_sync::blocking_mutex::raw::NoopRawMutex;
-use embassy_sync::channel::{Receiver, Sender};
+use embassy_sync::channel::{Sender};
 use static_cell::StaticCell;
 use heapless::{Vec};
 
@@ -42,7 +42,7 @@ pub async fn init(pwr: PIN_23,cs: PIN_25,clk: PIN_29,dio: PIN_24, seed: u64,
     let spi = ExclusiveDevice::new(bus, cs);
 
     let state = singleton!(cyw43::State::new());
-    let (mut control, runner) = cyw43::new(state, pwr, spi, fw).await;
+    let (control, runner) = cyw43::new(state, pwr, spi, fw).await;
 
     // spawner.spawn(wifi_task(runner)).unwrap();
     runner.run().await;
