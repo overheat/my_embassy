@@ -1,7 +1,6 @@
 use defmt::*;
 use embassy_net::{Stack};
 use embassy_net::tcp::TcpSocket;
-use embedded_hal_async::spi::{SpiBusRead};
 use embedded_io::asynch::Write;
 
 #[embassy_executor::task]

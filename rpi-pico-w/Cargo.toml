@@ -25,6 +25,7 @@ embassy-rp = { version = "0.1.0", features = [
 embassy-net = { version = "0.1.0", features = [
     "defmt",
     "tcp",
+    "udp",
     "dhcpv4",
     "medium-ethernet",
     "pool-16",

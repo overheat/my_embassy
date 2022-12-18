@@ -17,6 +17,7 @@ use {defmt_rtt as _, panic_probe as _};
 
 mod out;
 mod tcp;
+mod udp;
 mod wifi;
 
 macro_rules! singleton {
@@ -108,6 +109,7 @@ async fn main(spawner: Spawner) {
 
     unwrap!(spawner.spawn(out::pub_task(stack, seed)));
     unwrap!(spawner.spawn(tcp::listen_task(stack)));
+    // unwrap!(spawner.spawn(udp::listen_task(stack)));
 
 
 }
