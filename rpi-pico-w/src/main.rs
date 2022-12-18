@@ -36,15 +36,20 @@ macro_rules! singleton {
     }};
 }
 
-
-static CHANNEL: StaticCell<Channel<NoopRawMutex, f32, 1>> = StaticCell::new();
-
-
+pub enum Services {
+    Temperature,
+    DNS,
+    NTP,
+    Other,
+}
+static IN_CHANNEL: StaticCell<Channel<NoopRawMutex, Services, 1>> = StaticCell::new();
+static OUT_CHANNEL: StaticCell<Channel<NoopRawMutex, f32, 1>> = StaticCell::new();
 
 #[embassy_executor::main]
 async fn main(spawner: Spawner) {
     let p = embassy_rp::init(Default::default());
-    let channel = CHANNEL.init(Channel::new());
+    let _in = IN_CHANNEL.init(Channel::new());
+    let out = OUT_CHANNEL.init(Channel::new());
 
     // Include the WiFi firmware and Country Locale Matrix (CLM) blobs.
     // let fw = include_bytes!("../firmware/43439A0.bin");
@@ -107,9 +112,9 @@ async fn main(spawner: Spawner) {
     Timer::after(Duration::from_secs(10)).await;
 
     // spawner.spawn(logger::usb_task(p.USB)).unwrap();
-    spawner.spawn(get_temperature::get(p.ADC, channel.sender())).unwrap();
-    spawner.spawn(out::pub_task(stack, seed, channel.receiver())).unwrap();
-    // spawner.spawn(tcp::listen_task(stack)).unwrap();
+    spawner.spawn(tcp::listen_task(stack, _in.sender())).unwrap();
+    spawner.spawn(get_temperature::get(p.ADC, _in.receiver(), out.sender())).unwrap();
+    spawner.spawn(out::pub_task(stack, seed, out.receiver())).unwrap();
     // spawner.spawn(udp::listen_task(stack)).unwrap();
 
 

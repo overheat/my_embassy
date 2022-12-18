@@ -2,9 +2,12 @@ use defmt::*;
 use embassy_net::{Stack};
 use embassy_net::tcp::TcpSocket;
 use embedded_io::asynch::Write;
+use embassy_sync::blocking_mutex::raw::NoopRawMutex;
+use embassy_sync::channel::{Channel, Receiver, Sender};
 
 #[embassy_executor::task]
-pub async fn listen_task(stack: &'static Stack<cyw43::NetDevice<'static>>) -> ! {
+pub async fn listen_task(stack: &'static Stack<cyw43::NetDevice<'static>>, 
+                            sender: Sender<'static, NoopRawMutex, crate::Services, 1>) -> ! {
     let mut rx_buffer = [0; 4096];
     let mut tx_buffer = [0; 4096];
     let mut buf = [0; 4096];
@@ -36,7 +39,9 @@ pub async fn listen_task(stack: &'static Stack<cyw43::NetDevice<'static>>) -> ! 
             info!("rxd {:02x}", &buf[..n]);
 
             match socket.write_all(&buf[..n]).await {
-                Ok(()) => {}
+                Ok(()) => {
+                    sender.send(crate::Services::Temperature).await;
+                }
                 Err(e) => {
                     warn!("write error: {:?}", e);
                     break;
