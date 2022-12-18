@@ -19,6 +19,7 @@ mod out;
 mod tcp;
 mod udp;
 mod wifi;
+mod get_temperature;
 
 macro_rules! singleton {
     ($val:expr) => {{
@@ -107,7 +108,8 @@ async fn main(spawner: Spawner) {
 
     Timer::after(Duration::from_secs(10)).await;
 
-    unwrap!(spawner.spawn(out::pub_task(stack, seed)));
+    let temperature = get_temperature::get();
+    unwrap!(spawner.spawn(out::pub_task(stack, seed, temperature)));
     unwrap!(spawner.spawn(tcp::listen_task(stack)));
     // unwrap!(spawner.spawn(udp::listen_task(stack)));
 

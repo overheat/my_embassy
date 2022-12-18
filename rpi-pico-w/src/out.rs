@@ -31,7 +31,7 @@ use temperature::*;
 
 
 #[embassy_executor::task]
-pub async fn pub_task(stack: &'static Stack<cyw43::NetDevice<'static>>, seed: u64) -> ! {
+pub async fn pub_task(stack: &'static Stack<cyw43::NetDevice<'static>>, seed: u64, temperature: f32) -> ! {
     static CLIENT_STATE: TcpClientState<1, 1024, 1024> = TcpClientState::new();
     let client = TcpClient::new(&stack, &CLIENT_STATE);
 
@@ -45,7 +45,7 @@ pub async fn pub_task(stack: &'static Stack<cyw43::NetDevice<'static>>, seed: u6
         Timer::after(Duration::from_secs(5)).await;
         let sensor_data = TemperatureData {
             geoloc: None,
-            temp: Some(22.2),
+            temp: Some(temperature),
             hum: None,
         };
 
