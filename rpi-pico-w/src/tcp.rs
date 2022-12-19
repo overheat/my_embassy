@@ -42,7 +42,7 @@ pub async fn listen_task(
 
             match socket.write_all(&buf[..n]).await {
                 Ok(()) => {
-                    // sender.send(crate::Services::Temperature).await;
+                    sender.send(crate::Services::Temperature).await;
                 }
                 Err(e) => {
                     warn!("write error: {:?}", e);
