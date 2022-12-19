@@ -17,7 +17,6 @@ mod logger;
 mod out;
 mod tcp;
 mod udp;
-mod v4;
 mod wifi;
 pub enum Services {
     Temperature,
