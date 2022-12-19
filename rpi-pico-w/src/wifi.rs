@@ -1,10 +1,12 @@
 use core::convert::Infallible;
 
+use embassy_executor::Spawner;
 use embassy_net::{Ipv4Address, Ipv4Cidr, Stack, StackResources};
 use embassy_rp::gpio::{Flex, Level, Output};
 use embassy_rp::peripherals::{PIN_23, PIN_24, PIN_25, PIN_29};
 use embassy_sync::blocking_mutex::raw::NoopRawMutex;
 use embassy_sync::channel::Sender;
+use embassy_time::{Timer, Duration};
 use embedded_hal_1::spi::ErrorType;
 use embedded_hal_async::spi::{ExclusiveDevice, SpiBusFlush, SpiBusRead, SpiBusWrite};
 use heapless::Vec;
@@ -19,12 +21,13 @@ macro_rules! singleton {
 }
 #[embassy_executor::task]
 pub async fn init(
+    spawner: Spawner,
     pwr: PIN_23,
     cs: PIN_25,
     clk: PIN_29,
     dio: PIN_24,
     seed: u64,
-    sender: Sender<'static, NoopRawMutex, &'static Stack<cyw43::NetDevice<'static>>, 1>,
+    sender: Sender<'static, NoopRawMutex, &'static Stack<cyw43::NetDevice<'static>>, 10>,
 ) {
     // Include the WiFi firmware and Country Locale Matrix (CLM) blobs.
     // let fw = include_bytes!("../firmware/43439A0.bin");
@@ -48,10 +51,11 @@ pub async fn init(
     let spi = ExclusiveDevice::new(bus, cs);
 
     let state = singleton!(cyw43::State::new());
-    let (control, runner) = cyw43::new(state, pwr, spi, fw).await;
+    let (mut control, runner) = cyw43::new(state, pwr, spi, fw).await;
 
-    // spawner.spawn(wifi_task(runner)).unwrap();
-    runner.run().await;
+    spawner.spawn(wifi_task(runner)).unwrap();
+
+    // Timer::after(Duration::from_secs(10)).await;
 
     let net_device = control.init(clm).await;
 
@@ -77,15 +81,22 @@ pub async fn init(
         seed
     ));
 
+    spawner.spawn(net_task(stack)).unwrap();
     sender.send(stack).await;
 }
 
-// #[embassy_executor::task]
-// pub async fn wifi_task(
-//     runner: cyw43::Runner<'static, Output<'static, PIN_23>, ExclusiveDevice<Spi, Output<'static, PIN_25>>>,
-// ) -> ! {
-//     runner.run().await
-// }
+#[embassy_executor::task]
+pub async fn wifi_task(
+    runner: cyw43::Runner<'static, Output<'static, PIN_23>, ExclusiveDevice<Spi, Output<'static, PIN_25>>>,
+) -> ! {
+    runner.run().await
+}
+
+#[embassy_executor::task]
+pub async fn net_task(stack: &'static Stack<cyw43::NetDevice<'static>>) -> ! {
+    stack.run().await
+}
+
 
 pub struct Spi {
     /// SPI clock

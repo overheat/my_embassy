@@ -25,7 +25,7 @@ pub enum Services {
     NTP,
     Other,
 }
-static CHANNEL: StaticCell<Channel<NoopRawMutex, &'static Stack<cyw43::NetDevice<'static>>, 1>> = StaticCell::new();
+static CHANNEL: StaticCell<Channel<NoopRawMutex, &'static Stack<cyw43::NetDevice<'static>>, 10>> = StaticCell::new();
 static IN_CHANNEL: StaticCell<Channel<NoopRawMutex, Services, 1>> = StaticCell::new();
 static OUT_CHANNEL: StaticCell<Channel<NoopRawMutex, f32, 1>> = StaticCell::new();
 
@@ -40,6 +40,7 @@ async fn main(spawner: Spawner) {
     let seed = 0x0123_4567_89ab_cdef; // chosen by fair dice roll. guarenteed to be random.
     spawner
         .spawn(wifi::init(
+            spawner,
             p.PIN_23,
             p.PIN_25,
             p.PIN_29,
@@ -53,7 +54,7 @@ async fn main(spawner: Spawner) {
 
     // And now we can use it!
     info!("Application initialized.");
-    spawner.spawn(v4::net_task(stack)).unwrap();
+    // spawner.spawn(v4::net_task(stack)).unwrap();
 
     // Timer::after(Duration::from_secs(10)).await;
 
